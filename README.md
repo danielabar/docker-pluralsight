@@ -84,3 +84,15 @@ If you're in an interactive container, can exit it without killing it by pressin
 If you don't specify a name on the docker run command, docker will assign a name.
 
 ### Registries and Repositories
+
+Images are pulled from _repositories_, which live inside a _registry_.
+
+The default public registry for Docker is _Docker Hub_.
+
+Within Docker Hub, there are many repo's, for example, the official (i.e. trusted) repos for Fedora, Ubuntu, Redis, MongoDB, etc.
+
+Each of these repos contains different images, for example for each version such as Ubuntu 12.0.4, 14.0.4, etc.
+
+[Browse docker hub](https://hub.docker.com/explore/)
+
+User repos look like, for example `docker pull radial/nginx`. Be careful when pulling from a non official repo!
