@@ -7,6 +7,9 @@
     - [Images](#images)
     - [Containers](#containers)
     - [Registries and Repositories](#registries-and-repositories)
+  - [Closer look at Images and Containers](#closer-look-at-images-and-containers)
+    - [Image Layers](#image-layers)
+    - [Union Mounts](#union-mounts)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -96,3 +99,35 @@ Each of these repos contains different images, for example for each version such
 [Browse docker hub](https://hub.docker.com/explore/)
 
 User repos look like, for example `docker pull radial/nginx`. Be careful when pulling from a non official repo!
+
+## Closer look at Images and Containers
+
+### Image Layers
+
+Images are layered (or stacked). Sometimes layers are referred to as images, which can be confusing.
+
+For example, 3 layers stacked on top of each other, with 0 on the bottom:
+
+```
+Layer 2 (Image 2)
+Layer 1 (Image 1)
+Layer 0 (Image 0)
+```
+
+Together, these layer/images form a single image. i.e. a single image comprised of three layered images. An example stack of layers:
+
+At the bottom layer, there is the _Base Image (rootfs)_. This has the root file system, which is all the files and directories required to make up a container's stripped down, bare minimum OS, for example, Ubuntu.
+
+The next layer, _Layer 1_ could be the application layer, for example nginx. And next _Layer 2_ might have some updates or config files.
+
+A single image can be shared by multiple containers. The layered approach allows for tweaks and updates to higher layers, without touching the base layer.
+
+### Union Mounts
+
+Each image or layer gets its own unique id. These id's are listed inside the Docker image, plus metadata that tells Docker how to build the container at run time. If there are any conflicts, higher layer overrides lower layer.
+
+Image layering is accomplished through _union mounts_. The ability to mount file systems on top of each other, combining all the layers into a single view.
+
+All of the layers in the image are mounted as read only. Then an additional layer is added when container is launched, which is the _pnly writeable_ layer.
+
+All changes to the container at run time are committed to this top layer, via copy on write behaviour.
