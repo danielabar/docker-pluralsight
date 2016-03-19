@@ -10,6 +10,7 @@
   - [Closer look at Images and Containers](#closer-look-at-images-and-containers)
     - [Image Layers](#image-layers)
     - [Union Mounts](#union-mounts)
+    - [Copying Images to Other Hosts](#copying-images-to-other-hosts)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -131,3 +132,52 @@ Image layering is accomplished through _union mounts_. The ability to mount file
 All of the layers in the image are mounted as read only. Then an additional layer is added when container is launched, which is the _pnly writeable_ layer.
 
 All changes to the container at run time are committed to this top layer, via copy on write behaviour.
+
+### Copying Images to Other Hosts
+
+Later in the course, will use Docker Hub to push and pull images. But can also do this manually by saving container image to a tar file and exporting it.
+
+To run a container with a short lived command (run container, run command, then process exits). This is detached mode, i.e. not using `-it` flags:
+
+```shell
+docker run ubuntu /bin/bash -c "echo 'cool content' > /tmp/cool-file"
+```
+
+This makes a _change_ to the container because it created a file. To verify, run `docker ps -a`. Sample output:
+
+```
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                      PORTS               NAMES
+c583c0b6afab        ubuntu              "/bin/bash -c 'echo '"   6 minutes ago       Exited (0) 35 seconds ago                       amazing_keller
+bd04a65de4fd        ubuntu              "bash"                   24 hours ago        Exited (0) 24 hours ago                         agitated_goldberg
+4bd18fa5121f        ubuntu              "bash"                   4 days ago          Exited (127) 3 days ago                         pedantic_stonebraker
+7240d4bb88c0        hello-world         "/hello"                 4 days ago          Exited (0) 4 days ago                           insane_poitras
+```
+
+To create a new image from the changes just made to the container, where `fridge` is the name to be assigned to the image:
+
+```shell
+docker commit c583c0b6afab fridge
+```
+
+Now to  verify newly created image, run `docker images`, sample output:
+
+```
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+fridge              latest              6a2caa759236        8 seconds ago       188 MB
+ubuntu              latest              07c86167cdc4        2 weeks ago         188 MB
+hello-world         latest              690ed74de00f        5 months ago        960 B
+```
+
+To see all the commands that were used to create an image, run `docker history fridge`.
+
+To save our newly created image:
+
+```shell
+docker save -o /tmp/fridge.tar fridge
+```
+
+To look inside the contents of the tar:
+
+```shell
+tar -tf /tmp/fridge.tar
+```
