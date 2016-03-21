@@ -11,6 +11,7 @@
     - [Image Layers](#image-layers)
     - [Union Mounts](#union-mounts)
     - [Copying Images to Other Hosts](#copying-images-to-other-hosts)
+    - [One Process per Container](#one-process-per-container)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -181,3 +182,17 @@ To look inside the contents of the tar:
 ```shell
 tar -tf /tmp/fridge.tar
 ```
+
+To import the tar file on another machine runningDocker:
+
+```shell
+docker load -i /tmp/fridge.tar
+```
+
+### One Process per Container
+
+Containers are run-time instances of images. When a container is launched with `docker run`, the Docker engine reads the image and any metadata, then builds the container by stacking the different image layers, as per the instructions in the image metadata.
+
+Each container gets its own thin writeable layer on top of the read-only image layers below it. All changes to a container are made in this top writeable layer, for example, installing and updating applications, writing new files, config changes like ip address. All container state is stored in this top writeable layer. This layer is initially empty, it only consumes space as changes are made to the container.
+
+The `rootfs` of a container is never made writeable. But due to union mounts, end up with "look and feel" of a regular writeable file system.
