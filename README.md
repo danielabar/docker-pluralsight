@@ -343,3 +343,99 @@ docker exec -it {containerID|name} bash
 ```
 
 ## Building from a Dockerfile
+
+### Introducing the Dockerfile
+
+Plain text file has to be named exactly "Dockerfile". Its comprised of instructions for how to build an image, that get read one at a time from top to bottom.
+
+### Creating a Dockerfile
+
+[Example](dockerfile-intro/Dockerfile)
+
+Lines starting with hash "#" are comments.
+
+`FROM` must be first instruction in Dockerfile. Specifies which image this image will be based on.
+
+Next line should be `MAINTAINER`. This can go anywhere in the file, but its good practice to put it at the top.
+
+`RUN` instructions are used to run commands against the image that is being built, for example, to install software packages.
+
+Every `RUN` instruction _adds a layer_ to the image. For example, suppose a Dockerfile has:
+
+```ruby
+RUN apt-get update
+RUN apt-get install -y nginx
+RUN apt-get install -y golang
+```
+
+This would result in an image with 3 layers. First RUN instruction would create a container, execute the command `apt-get update`, stop the container and commit the change to a new image layer. Next RUN instruction launches a new container from the new image layer just committed, executes `apt-get install -y nginx`, stops the container, and commits its new layer. And so on for every RUN command.
+
+Then `CMD` specifies a command to run anytime a container is launched from this image, for example:
+
+```ruby
+CMD ["echo", "Hello World"]
+```
+
+### Building an Image from a Dockerfile
+
+To build an image from a Dockerfile, from the directory in which the Dockerfile is located:
+
+```shell
+docker build -t helloworld:0.1 .
+```
+
+`-t` to apply a tag to the image, not required, but highly recommended.
+
+`.` indicates this directory.
+
+When the build command is run, the Docker daemon steps through each instruction in Dockerfile. For example:
+
+```
+Step 1 : FROM phusion/baseimage:0.9.15
+ ---> 4cb79d39875e
+Step 2 : MAINTAINER developer@foo.test
+ ---> Running in 4a5338caecdf
+ ---> 52bda3555ffb
+ Removing intermediate container 4a5338caecdf
+```
+
+Detailed analysis of Step 2:
+1. Spins up an (intermediate) container with id `4a5338caecdf`
+1. Runs the MAINTAINER command
+1. Commits a new image layer with id `52bda3555ffb`
+1. Removes intermediate container `4a5338caecdf`
+
+This sequence of steps is repeated for each instruction in the Dockerfile.
+
+Note its the _container_ that gets thrown away at each step, NOT the image layers, those are kept.
+
+Last line of build output is something like `Successfully built bde721e98ca0`, where `bde...` is the newly created Image ID. Run `docker images` to see this.
+
+To see the history of a docker image:
+
+```shell
+docker history {Image ID}
+```
+
+To run a container from the newly created image:
+
+```shell
+docker run helloworld:0.1
+```
+
+### Inspecting a Dockerfile from Docker Hub
+
+Browse repos on [Docker Hub](https://hub.docker.com/explore/), for example [Ubuntu](https://hub.docker.com/_/ubuntu/).
+
+Can click on any of the image version links to get to the Dockerfile for that image:tag. For example [Ubuntu 14.0.4](https://github.com/tianon/docker-brew-ubuntu-core/blob/fae14e72201e4411a7e04c70150238dc79242b29/trusty/Dockerfile).
+
+This image uses a very long RUN command to avoid having many layers in the image, for example:
+
+```
+RUN set -xe \
+	\
+	&& echo '#!/bin/sh' > /usr/sbin/policy-rc.d \
+	&& echo 'exit 101' >> /usr/sbin/policy-rc.d \
+	&& chmod +x /usr/sbin/policy-rc.d \
+  ...
+```
