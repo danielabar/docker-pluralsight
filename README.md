@@ -306,6 +306,40 @@ Note this will not work for removing a _running_ container, unless its forced wi
 
 ### Low-level Container info
 
+`docker inspect {containerID|imageID}` provides detailed information about a container or image. Including "State" such as its current status, when it was started etc, networking info like IP address.
+
+Behind the scenes, this information is pulled together from several json files, config.json and hostconfig.json.
+
 ### Getting a Shell in a Container
+
+`docker attach` attaches to PID 1 inside the container, which is fine if PID 1 is a shell. But that's not very common in the real world.
+
+So how else to get a shell? There's `ssh` but running that in a container is generally frowned upon.
+
+One option is `nsenter` to entering a namespace. First requires PID of container on the host. Can get that from `docker inspect`:
+
+```shell
+docker inspect {containerID} | grep Pid
+nsenter -m -u -n -p -i -t {pid} /bin/bash
+```
+
+* `-m` mount namespace
+* `-u` uts namespace
+* `-n` network namespace
+* `-p` process namespace
+* `-i` ipc namespace
+* `-t` target
+
+nsenter may not be installed by default, to install it:
+
+```shell
+docker run -v /usr/local/bin:/target jpetazzo/nsenter
+```
+
+Recommended:
+
+```shell
+docker exec -it {containerID|name} bash
+```
 
 ## Building from a Dockerfile
