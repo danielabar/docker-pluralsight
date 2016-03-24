@@ -220,3 +220,16 @@ docker run -d ubuntu /bin/bash -c "ping -c 10 8.8.8.8"
  It's good practice to be _very specific_ about which image to run. For example, instead of simply `ubuntu`, specify which version/tag like `ubuntu:14.04`. Otherwise it will download `latest` tag which could be different from today to tomorrow.
 
 ### Commands for working with Containers
+
+Docker `run` command has many switches. For example:
+
+* `-it` to run in interactive mode and with a shell
+* `-d` to run container detached and in the background
+* `--cpu-shares` to control how many cpu shares container gets (1024 is all, 256 is a quarter), by default, all containers on a host get equal access to shares.
+* `memory=1g` to specify how much memory to allocate to container, for example 1g.
+
+To get detailed information about a container:
+
+```shell
+docker inspect {containerID}
+```
