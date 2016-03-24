@@ -233,3 +233,59 @@ To get detailed information about a container:
 ```shell
 docker inspect {containerID}
 ```
+
+## Container Management
+
+### Starting and Stopping Containers
+
+Containers can be started, stopped, and restarted. Under the hood, containers are a linux process running on the host.
+
+To stop a container from the host:
+
+```shell
+docker stop {containerID}
+```
+
+The stop command sends a `SIGTERM` signal to the process with PID1 running inside of the container. The process running in the container can gracefully terminate.
+
+Can also do `docker kill -s <SIGNAL> {containerID}` which sends a `SIGKILL` signal. Brute force, non graceful way to terminate.
+
+To see the last container that has run on the host:
+
+```shell
+docker ps -l
+```
+
+It can be restarted with:
+
+```shell
+docker start {containerID}
+```
+
+Note that `docker attach` attaches to process with PID1 inside the container.
+
+### PID1 and Containers
+
+PID1 is the process running in the container that was specified at the end of the docker run command `docker run {command}`.
+
+In the simple examples above, has been `bin/bash`, but usually would be a command to start an app daemon.
+
+Note that PID1 is _not_ the usual `init` Linux process (which all other processes are forked from, and when it receives a terminate signal, it gracefully shuts down all its child processes). So when the Docker container PID1 receives a kill signal, it shuts itself down, but will NOT shut down any other processes running on the container. And that is why its best practice to only run a single process per container.
+
+### Deleting Containers
+
+To see how many containers and images are stored on the host:
+
+```shell
+docker info
+```
+
+To remove (i.e. delete) a container:
+
+```shell
+docker rm {containerID}
+```
+
+Note this will not work for removing a _running_ container, unless its forced with `-f` flag, or `stop` the container first.
+
+### Lookinsg Inside of Containers
