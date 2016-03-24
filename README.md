@@ -17,11 +17,21 @@
   - [Container Management](#container-management)
     - [Starting and Stopping Containers](#starting-and-stopping-containers)
     - [PID1 and Containers](#pid1-and-containers)
-    - [Deleting Containers](#deleting-containers)
+    - [Deleting Containers and Images](#deleting-containers-and-images)
     - [Looking Inside of Containers](#looking-inside-of-containers)
     - [Low-level Container info](#low-level-container-info)
     - [Getting a Shell in a Container](#getting-a-shell-in-a-container)
   - [Building from a Dockerfile](#building-from-a-dockerfile)
+    - [Introducing the Dockerfile](#introducing-the-dockerfile)
+    - [Creating a Dockerfile](#creating-a-dockerfile)
+    - [Building an Image from a Dockerfile](#building-an-image-from-a-dockerfile)
+    - [Inspecting a Dockerfile from Docker Hub](#inspecting-a-dockerfile-from-docker-hub)
+  - [Working with Registries](#working-with-registries)
+    - [Creating a Public Repo on Docker Hub](#creating-a-public-repo-on-docker-hub)
+    - [Using Our Public Repo on Docker Hub](#using-our-public-repo-on-docker-hub)
+  - [Diving Deeper with Dockerfile](#diving-deeper-with-dockerfile)
+    - [The Build Cache](#the-build-cache)
+    - [Dockerfile and Layers](#dockerfile-and-layers)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -468,3 +478,37 @@ Note: First time, need to run `docker login` to authenticate.
 ```shell
 docker pull danielabar/helloworld:0.0.3
 ```
+
+## Diving Deeper with Dockerfile
+
+### The Build Cache
+
+The first time you build an image, it will take some noticeable amount of time to build all the layers. But building a second time, even if update the tag, its very fast because it uses the _build cache_.
+
+When an image is built, the Docker daemon iterates through the Dockerfile, executing each instruction. As each instruction is executed, daemon checks to see if it already has an image for that instruction in its build cache.
+
+The daemon starts from base image, then looks at all child images associated (i.e. linked) with that base image, and it checks to see if any of them were built with the same instruction as the current instruction being processed. If yes, then the daemon can use the image from the cache and creates a new link.
+
+### Dockerfile and Layers
+
+[Example](dockerfile-layers/Dockerfile)
+
+When built, this image will consist of 6 layers. To understand how this happened, run `docker history {Image ID}`. This lists events in reverse order to the instructions in Dockerfile. Each one is a layer:
+
+```
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT
+f3fb495c13d0        6 minutes ago       /bin/sh -c #(nop) CMD ["echo" "Hello World"]    0 B
+f5f16f45412c        6 minutes ago       /bin/sh -c apt-get install -y golang            174.5 MB
+ef09eeb76b57        6 minutes ago       /bin/sh -c apt-get install -y vim               43.27 MB
+199db7d6388e        7 minutes ago       /bin/sh -c apt-get install -y apache2           14.38 MB
+2d475219289a        7 minutes ago       /bin/sh -c apt-get update                       21.67 MB
+37df496aaa6f        7 minutes ago       /bin/sh -c #(nop) MAINTAINER test@test.test     0 B
+97434d46f197        6 days ago          /bin/sh -c #(nop) CMD ["/bin/bash"]             0 B
+<missing>           6 days ago          /bin/sh -c sed -i 's/^#\s*\(deb.*universe\)$/   1.895 kB
+<missing>           6 days ago          /bin/sh -c set -xe   && echo '#!/bin/sh' > /u   194.5 kB
+<missing>           6 days ago          /bin/sh -c #(nop) ADD file:e01d51d39ea04c8efb   187.8 MB
+```
+
+Our image layers start at `MAINTAINER` line and moving upwards. Those below come from the base image (ubuntu:14.04 in this case). So MAINTAINER instructions + 4 apt-get's + CMD = 6 image layers.
+
+Most instructions issued in a Dockerfile result in a new image layer being created.
