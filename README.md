@@ -14,6 +14,14 @@
     - [Top writeable layer of containers](#top-writeable-layer-of-containers)
     - [One Process per Container](#one-process-per-container)
     - [Commands for working with Containers](#commands-for-working-with-containers)
+  - [Container Management](#container-management)
+    - [Starting and Stopping Containers](#starting-and-stopping-containers)
+    - [PID1 and Containers](#pid1-and-containers)
+    - [Deleting Containers](#deleting-containers)
+    - [Looking Inside of Containers](#looking-inside-of-containers)
+    - [Low-level Container info](#low-level-container-info)
+    - [Getting a Shell in a Container](#getting-a-shell-in-a-container)
+  - [Building from a Dockerfile](#building-from-a-dockerfile)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -272,6 +280,8 @@ In the simple examples above, has been `bin/bash`, but usually would be a comman
 
 Note that PID1 is _not_ the usual `init` Linux process (which all other processes are forked from, and when it receives a terminate signal, it gracefully shuts down all its child processes). So when the Docker container PID1 receives a kill signal, it shuts itself down, but will NOT shut down any other processes running on the container. And that is why its best practice to only run a single process per container.
 
+However, may also want other processes like syslog, cron, etc. See `phusion/baseimage` for doing this properly within Docker.
+
 ### Deleting Containers
 
 To see how many containers and images are stored on the host:
@@ -288,4 +298,14 @@ docker rm {containerID}
 
 Note this will not work for removing a _running_ container, unless its forced with `-f` flag, or `stop` the container first.
 
-### Lookinsg Inside of Containers
+### Looking Inside of Containers
+
+`docker top {containerID}` can be run from the host, to see processes running inside the container.
+
+`docker logs {containerID}` will show any logs from container. Can also supply `-f` or `--follow` to docker logs command to keep streaming new log messages, similar to linux `tail` command.
+
+### Low-level Container info
+
+### Getting a Shell in a Container
+
+## Building from a Dockerfile
