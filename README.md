@@ -282,7 +282,7 @@ Note that PID1 is _not_ the usual `init` Linux process (which all other processe
 
 However, may also want other processes like syslog, cron, etc. See `phusion/baseimage` for doing this properly within Docker.
 
-### Deleting Containers
+### Deleting Containers and Images
 
 To see how many containers and images are stored on the host:
 
@@ -297,6 +297,12 @@ docker rm {containerID}
 ```
 
 Note this will not work for removing a _running_ container, unless its forced with `-f` flag, or `stop` the container first.
+
+To delete an image, first need to delete any containers that are linked to that image, use `docker ps -a` to find these.
+
+Then an image can be deleted with `docker rmi {Image ID}`.
+
+Can delete multiple containers or images at once by providing a space separated list of ID's.
 
 ### Looking Inside of Containers
 
@@ -438,4 +444,27 @@ RUN set -xe \
 	&& echo 'exit 101' >> /usr/sbin/policy-rc.d \
 	&& chmod +x /usr/sbin/policy-rc.d \
   ...
+```
+
+## Working with Registries
+
+### Creating a Public Repo on Docker Hub
+
+In order to push an image to Docker Hub, need to create a Docker account.
+
+Note that when adding a repo, can mark it as Public or Private. However, you only get one _free_ private repo.
+
+After a repo is created on Docker Hub, to push to it, first need to tag the Image ID with the namespaced name, then can push it, for example:
+
+```shell
+docker tag 33bd6fec7f67 danielabar/helloworld:0.0.3
+docker push danielabar/helloworld:0.0.3
+```
+
+Note: First time, need to run `docker login` to authenticate.
+
+### Using Our Public Repo on Docker Hub
+
+```shell
+docker pull danielabar/helloworld:0.0.3
 ```
