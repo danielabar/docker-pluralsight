@@ -32,6 +32,9 @@
   - [Diving Deeper with Dockerfile](#diving-deeper-with-dockerfile)
     - [The Build Cache](#the-build-cache)
     - [Dockerfile and Layers](#dockerfile-and-layers)
+    - [Building a Web Server Dockerfile](#building-a-web-server-dockerfile)
+    - [Launching the Web Server Container](#launching-the-web-server-container)
+    - [Reducing the Number of Layers in an Image](#reducing-the-number-of-layers-in-an-image)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -512,3 +515,37 @@ ef09eeb76b57        6 minutes ago       /bin/sh -c apt-get install -y vim       
 Our image layers start at `MAINTAINER` line and moving upwards. Those below come from the base image (ubuntu:14.04 in this case). So MAINTAINER instructions + 4 apt-get's + CMD = 6 image layers.
 
 Most instructions issued in a Dockerfile result in a new image layer being created.
+
+### Building a Web Server Dockerfile
+
+[Example](dockerfile-web/Dockerfile)
+
+To expose a port, use `EXPOSE` instruction, for example:
+
+```ruby
+EXPOSE 80
+```
+
+This ensures that port 80 in any containers that spin up from this image, is available to the Docker host its running on.
+
+```shell
+docker build -t danielabar/apache-webserver:0.0.1 .
+```
+
+### Launching the Web Server Container
+
+```shell
+docker run -d -p 80:80 danielabar/apache-webserver:0.0.1
+```
+
+`-p 80:80` specifies to map port 80 on host to 80 on container.
+
+To test that it's working, first get the IP address of the docker machine:
+
+```shell
+192.168.99.100
+```
+
+Then enter that in a browser, expect the Apache2 Ubuntu Default Page.
+
+### Reducing the Number of Layers in an Image
