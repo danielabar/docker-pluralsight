@@ -35,6 +35,7 @@
     - [Building a Web Server Dockerfile](#building-a-web-server-dockerfile)
     - [Launching the Web Server Container](#launching-the-web-server-container)
     - [Reducing the Number of Layers in an Image](#reducing-the-number-of-layers-in-an-image)
+    - [The CMD Instruction](#the-cmd-instruction)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -549,3 +550,34 @@ To test that it's working, first get the IP address of the docker machine:
 Then enter that in a browser, expect the Apache2 Ubuntu Default Page.
 
 ### Reducing the Number of Layers in an Image
+
+Solution is to have a single RUN instruction with multiple instructions joined by `&&`. Also makes the image size smaller. For example, going from this:
+
+```ruby
+RUN apt-get update
+RUN apt-get install -y apache2
+RUN apt-get install -y apache2-utils
+RUN apt-get install -y vim
+RUN apt-get clean
+```
+
+to this:
+
+```ruby
+RUN apt-get update && apt-get install -y \
+  apache2 \
+  apache2-utils \
+  vim \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+```
+
+Results in a smaller image:
+
+```
+REPOSITORY                    TAG                 IMAGE ID            CREATED             SIZE
+danielabar/apache-webserver   0.0.2               7963f7d10879        7 minutes ago       300.2 MB
+danielabar/apache-webserver   0.0.1               b5776bd68cde        46 hours ago        323.4 MB
+```
+
+### The CMD Instruction

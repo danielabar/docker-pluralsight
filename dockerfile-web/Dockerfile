@@ -2,16 +2,13 @@
 FROM phusion/baseimage:0.9.15
 MAINTAINER test@test.test
 
-RUN apt-get update
-RUN apt-get install -y apache2
-
-# In a real world scenario, probably would not install these on a production web server,
-# but this is for demonstration purposes, learning about layers.
-RUN apt-get install -y apache2-utils
-RUN apt-get install -y vim
-
-# Good practice to clean up apt cache to keep containers lean
-RUN apt-get clean
+# Combine install instructions in one line to minimize layers
+RUN apt-get update && apt-get install -y \
+  apache2 \
+  apache2-utils \
+  vim \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Container networking
 EXPOSE 80
