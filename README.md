@@ -106,7 +106,7 @@ In order to launch a container, need an image. `docker run` is used to launch a 
 
 `docker ps -a` to see all containers that have been run on the host.
 
-To attach to an existing running image `docker attach {containerid}`
+To attach to an existing running image `docker attach <containerid>`
 
 If you're in an interactive container, can exit it without killing it by pressing Ctrl + P + Q
 
@@ -236,7 +236,7 @@ docker run -d ubuntu /bin/bash -c "ping -c 10 8.8.8.8"
  To see top running processes inside a running container:
 
  ```shell
- docker top {containerID}
+ docker top <containerID>
  ```
 
  It's good practice to be _very specific_ about which image to run. For example, instead of simply `ubuntu`, specify which version/tag like `ubuntu:14.04`. Otherwise it will download `latest` tag which could be different from today to tomorrow.
@@ -253,7 +253,7 @@ Docker `run` command has many switches. For example:
 To get detailed information about a container:
 
 ```shell
-docker inspect {containerID}
+docker inspect <containerID>
 ```
 
 ## Container Management
@@ -265,12 +265,12 @@ Containers can be started, stopped, and restarted. Under the hood, containers ar
 To stop a container from the host:
 
 ```shell
-docker stop {containerID}
+docker stop <containerID>
 ```
 
 The stop command sends a `SIGTERM` signal to the process with PID1 running inside of the container. The process running in the container can gracefully terminate.
 
-Can also do `docker kill -s <SIGNAL> {containerID}` which sends a `SIGKILL` signal. Brute force, non graceful way to terminate.
+Can also do `docker kill -s <SIGNAL> <containerID>` which sends a `SIGKILL` signal. Brute force, non graceful way to terminate.
 
 To see the last container that has run on the host:
 
@@ -281,14 +281,14 @@ docker ps -l
 It can be restarted with:
 
 ```shell
-docker start {containerID}
+docker start <containerID>
 ```
 
 Note that `docker attach` attaches to process with PID1 inside the container.
 
 ### PID1 and Containers
 
-PID1 is the process running in the container that was specified at the end of the docker run command `docker run {command}`.
+PID1 is the process running in the container that was specified at the end of the docker run command `docker run <command>`.
 
 In the simple examples above, has been `bin/bash`, but usually would be a command to start an app daemon.
 
@@ -307,26 +307,26 @@ docker info
 To remove (i.e. delete) a container:
 
 ```shell
-docker rm {containerID}
+docker rm <containerID>
 ```
 
 Note this will not work for removing a _running_ container, unless its forced with `-f` flag, or `stop` the container first.
 
 To delete an image, first need to delete any containers that are linked to that image, use `docker ps -a` to find these.
 
-Then an image can be deleted with `docker rmi {Image ID}`.
+Then an image can be deleted with `docker rmi <Image ID>`.
 
 Can delete multiple containers or images at once by providing a space separated list of ID's.
 
 ### Looking Inside of Containers
 
-`docker top {containerID}` can be run from the host, to see processes running inside the container.
+`docker top <containerID>` can be run from the host, to see processes running inside the container.
 
-`docker logs {containerID}` will show any logs from container. Can also supply `-f` or `--follow` to docker logs command to keep streaming new log messages, similar to linux `tail` command.
+`docker logs <containerID>` will show any logs from container. Can also supply `-f` or `--follow` to docker logs command to keep streaming new log messages, similar to linux `tail` command.
 
 ### Low-level Container info
 
-`docker inspect {containerID|imageID}` provides detailed information about a container or image. Including "State" such as its current status, when it was started etc, networking info like IP address.
+`docker inspect <containerID|imageID>` provides detailed information about a container or image. Including "State" such as its current status, when it was started etc, networking info like IP address.
 
 Behind the scenes, this information is pulled together from several json files, config.json and hostconfig.json.
 
@@ -339,8 +339,8 @@ So how else to get a shell? There's `ssh` but running that in a container is gen
 One option is `nsenter` to entering a namespace. First requires PID of container on the host. Can get that from `docker inspect`:
 
 ```shell
-docker inspect {containerID} | grep Pid
-nsenter -m -u -n -p -i -t {pid} /bin/bash
+docker inspect <containerID> | grep Pid
+nsenter -m -u -n -p -i -t <pid> /bin/bash
 ```
 
 * `-m` mount namespace
@@ -359,7 +359,7 @@ docker run -v /usr/local/bin:/target jpetazzo/nsenter
 Recommended:
 
 ```shell
-docker exec -it {containerID|name} bash
+docker exec -it <containerID|name> bash
 ```
 
 ## Building from a Dockerfile
@@ -434,7 +434,7 @@ Last line of build output is something like `Successfully built bde721e98ca0`, w
 To see the history of a docker image:
 
 ```shell
-docker history {Image ID}
+docker history <Image ID>
 ```
 
 To run a container from the newly created image:
@@ -497,7 +497,7 @@ The daemon starts from base image, then looks at all child images associated (i.
 
 [Example](dockerfile-layers/Dockerfile)
 
-When built, this image will consist of 6 layers. To understand how this happened, run `docker history {Image ID}`. This lists events in reverse order to the instructions in Dockerfile. Each one is a layer:
+When built, this image will consist of 6 layers. To understand how this happened, run `docker history <Image ID>`. This lists events in reverse order to the instructions in Dockerfile. Each one is a layer:
 
 ```
 IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT
@@ -602,10 +602,89 @@ For example if Dockerfile has:
 CMD echo $var1
 ```
 
-Then the variable would get expanded, just like it would in a shell (assuming a variable had bene passed in, will be shown how to do this later in the course).
+Then the variable would get expanded, just like it would in a shell (assuming a variable had been passed in, will be shown how to do this later in the course).
 
 __Exec Form:__ _This is the recommended style_. Arguments are passed to CMD formatted as a JSON array, i.e comma separated list of values, enclosed in double quotes `["command", "arg1"]`.
 
 This form allows commands to be executed inside containers that don't have a shell. Avoids string munging by shell. But no shell features such as variable expansion, and shell chars such as `&&`, `||`, `>`, ...
 
 ### The ENTRYPOINT Instruction
+
+[Example](docker-entry/Dockerfile)
+
+Preferred method for specifying default app to run inside a container is with `ENTRYPOINT` instruction. Advantages over `CMD`:
+
+* Can't be overridden at run-time with commands `dockek run ... <command>`.
+* Any command at run-time gets interpreted as _arguments_ to `ENTRYPOINT`.
+* A single image's containers can have different behaviours by passing different arguments to entrypoint.
+
+For example, given a Dockerfile containing:
+
+```ruby
+ENTRYPOINT ["echo"]
+```
+
+Build:
+
+```shell
+docker build -t danielabar/entry-example:0.0.1 .
+```
+
+Run with arguments:
+
+```shell
+docker run danielabar/entry-example:0.0.1 Helooooo0 there!
+```
+
+Outputs:
+
+```
+Helooooo0 there!
+```
+
+What happened? String at end of run command "Helooooo0 there!" got passed to `ENTRYPOINT ["echo"]` as argument.
+
+Note: If try to run the container in interactive mode and get a shell:
+
+```shell
+docker run -it danielabar/entry-example:0.0.1 /bin/bash
+```
+
+What actually happens is "/bin/bash" gets interpreted as an argument to `echo` ENTRYPOINT, so it will just display "/bin/bash" and you won't get into the container, because it will immediately exist after it finishes processing echo.
+
+Using `ENTRYPOINT` makes the container behave like a binary. In the above simple example, the container is behaving like the `echo` binary.
+
+A more realistic example, Dockerfile:
+
+```ruby
+FROM phusion/baseimage:0.9.15
+MAINTAINER test@test.test
+RUN apt-get update && apt-get install -y iputils-ping apache2
+ENTRYPOINT ["apache2ctl"]
+```
+
+Build:
+
+```shell
+docker build -t danielabar/entry-example:0.0.2 .
+```
+
+Run passing in args to `apache2ctl`:
+
+```shell
+docker run -d -p 80:80 danielabar/entry-example:0.0.2 -D FOREGROUND
+```
+
+To verify, run `docker ps` and see the COMMAND being used:
+
+```
+CONTAINER ID        IMAGE                            COMMAND                  CREATED             STATUS              PORTS                NAMES
+8a9f5da91a95        danielabar/entry-example:0.0.2   "apache2ctl -D FOREGR"   2 minutes ago       Up 2 minutes        0.0.0.0:80->80/tcp   thirsty_knuth
+```
+
+Additional Notes:
+
+* If both `CMD` and `ENTRYPOINT` instructions are specified in a Dockerfile, the `CMD` instructions also get interpreted as arguments, _if_ they're specified in exec form. Also recall `CMD` in Dockerfile is overridden by `docker run ... <command>`. This can be useful in specifying default arguments in Dockerfile as `CMD`, then have ability to _override_ at runtime using CLI.
+* `ENTRYPOINT` in Dockerfile can be overridden at docker run CLI with `--entrypoint` flag.
+
+### The ENV Instruction
