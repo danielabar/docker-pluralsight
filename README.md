@@ -581,3 +581,31 @@ danielabar/apache-webserver   0.0.1               b5776bd68cde        46 hours a
 ```
 
 ### The CMD Instruction
+
+Similar to `RUN` in that it executes commands, but its also very different:
+
+* Only executes at run-time, i.e. when a container is launched, whereas `RUN` is a build-time instruction.
+* `RUN` adds layers to images and is commonly used to install apps (eg: `apt-get install...`).
+* `CMD` runs a command in the container when its launched.
+* `CMD` is equivalent of `<command>` that can be added at end of `docker run`, i.e. `docker run <args> <command>`.
+* Commonly used to start applications on PID1 inside a container (eg: Apache, MongoDB, Redis etc.).
+* Note that if a `<command>` is specified on the `docker run` CLI, this overrides any `CMD` in the Dockerfile.
+* There can only be one `CMD` per Dockerfile
+
+CMD takes two input styles:
+
+__Shell Form:__ Takes the commands, arguments, variables, etc and treats them exactly the same way they'd be treated by the shell itself. If arguments are specified in this form, they get automatically prepended with `/bin/sh -c`
+
+For example if Dockerfile has:
+
+```ruby
+CMD echo $var1
+```
+
+Then the variable would get expanded, just like it would in a shell (assuming a variable had bene passed in, will be shown how to do this later in the course).
+
+__Exec Form:__ _This is the recommended style_. Arguments are passed to CMD formatted as a JSON array, i.e comma separated list of values, enclosed in double quotes `["command", "arg1"]`.
+
+This form allows commands to be executed inside containers that don't have a shell. Avoids string munging by shell. But no shell features such as variable expansion, and shell chars such as `&&`, `||`, `>`, ...
+
+### The ENTRYPOINT Instruction
