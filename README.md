@@ -36,6 +36,9 @@
     - [Launching the Web Server Container](#launching-the-web-server-container)
     - [Reducing the Number of Layers in an Image](#reducing-the-number-of-layers-in-an-image)
     - [The CMD Instruction](#the-cmd-instruction)
+    - [The ENTRYPOINT Instruction](#the-entrypoint-instruction)
+    - [The ENV Instruction](#the-env-instruction)
+    - [Volumes and the VOLUME Instruction](#volumes-and-the-volume-instruction)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -688,3 +691,36 @@ Additional Notes:
 * `ENTRYPOINT` in Dockerfile can be overridden at docker run CLI with `--entrypoint` flag.
 
 ### The ENV Instruction
+
+[Example](docker-env/Dockerfile)
+
+Used to pass environment variables to containers. Looks like `ENV var=value`. Then `var` is available inside the container as a regular environment variable.
+
+Multiple variables can be defined on the same line, space separated. Otherwise if use multiple ENV instructions, each creates another image layer.
+
+Build the image, run a container from it, then check the environment variables:
+
+```shell
+$ docker build -t danielabar/docker-env:0.0.1 .
+$ docker run -it danielabar/docker-env:0.0.1 /bin/bash
+root@<containerid>:/# env
+```
+
+Can also use env vars in context of Dockerfile. For example:
+
+```ruby
+ENV var3=echo var4=hellooooo
+CMD $var3 $var4
+```
+
+Build and run it in detached mode, then inspect the logs to verify it ran the echo command with 'hellooooo'.
+
+```shell
+$ docker build -t danielabar/docker-env:0.0.2 .
+$ docker run -d danielabar/docker-env:0.0.2
+$ docker logs <containerid>
+```
+
+In the case of a long running command, can also follow the logs with `docker logs -f <containerid | name>`
+
+### Volumes and the VOLUME Instruction
