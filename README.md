@@ -786,3 +786,17 @@ docker rm -v <containerID>
 ```
 
 If the container is deleted without specifying `-v`, then the volume does not get deleted.
+
+## Docker Networking
+
+### The docker0 Bridge
+
+Using this [Dockerfile](docker-net/Dockerfile), build, then launch two containers, for each one run interactive to keep the shell going, then Ctrl+P+Q to jump out:
+
+```shell
+docker build -t net-img .
+docker run -it --name=net1 net-img
+docker run -it --name=net2 net-img
+```
+
+Each new container gets one interface automatically attached to the `docker0` virtual bridge.
