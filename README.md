@@ -39,6 +39,9 @@
     - [The ENTRYPOINT Instruction](#the-entrypoint-instruction)
     - [The ENV Instruction](#the-env-instruction)
     - [Volumes and the VOLUME Instruction](#volumes-and-the-volume-instruction)
+      - [Host Mount](#host-mount)
+      - [VOLUME Instruction](#volume-instruction)
+      - [Remove Volume](#remove-volume)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -724,3 +727,62 @@ $ docker logs <containerid>
 In the case of a long running command, can also follow the logs with `docker logs -f <containerid | name>`
 
 ### Volumes and the VOLUME Instruction
+
+Volumes support decoupling data and volumes from containers. Can also be used to share data between containers.
+
+Specify a directory or mount point within a container and store any data _written_ to that location, _outside_ the container's union file system. i.e. store the data in a directory on the Docker host's file system.
+
+This way, if the container gets stopped or deleted, the data persists, because it's _decoupled_ from the container.
+
+Example:
+
+```shell
+docker run -it -v /test-vol --name=volumetest ubuntu:15.04 /bin/bash
+```
+
+Running `ls -l` from inside container, will see the `test-vol` directory, which Docker created as part of container creation. Note that `test-vol` doesn't have to already exist, but if it does, then normal unix mount rules apply. Any data that already exists in the mount point becomes unavailable while there's a volume mounted in it.
+
+Create a text file in the container `test-vol/testfile`, save it, then exit container with Ctrl P Q.
+(not sure where on Mac with Docker Toolbox volumes go).
+
+Other containers can share this volume using `volumes-from` flag:
+
+```shell
+docker run -it --volumes-from=volumetest --name=volumetest2  ubuntu:15.04 /bin/bash
+```
+
+Running `ls -l` in this container will see the `test-vol` directory with `testfile` in it.
+
+This volume is accessible to other containers, even if the original container that created it is stopped or deleted.
+
+#### Host Mount
+
+A directory can also be mounted from Docker host into a container, this is called a _host mount_. For example, might have a shared data directory on the Docker host, and want to bind mount it to every container launched on the host.
+
+```shell
+docker run -it -v /host-data:/container-data
+```
+
+This will mount `host-data` directory on Docker host to a mount point called `container-data` inside of the container.
+
+#### VOLUME Instruction
+
+Can also use the `VOLUME` instruction in a Dockerfile. For example:
+
+```ruby
+VOLUME /data
+```
+
+This will `data` directory in any containers launched from images built with this Dockerfile store their data in the Docker host's file system.
+
+Note: VOLUME instruction in Dockerfile does not support host mount.
+
+#### Remove Volume
+
+To delete a volume, delete it within its container:
+
+```shell
+docker rm -v <containerID>
+```
+
+If the container is deleted without specifying `-v`, then the volume does not get deleted.
