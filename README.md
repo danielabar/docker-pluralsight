@@ -42,6 +42,10 @@
       - [Host Mount](#host-mount)
       - [VOLUME Instruction](#volume-instruction)
       - [Remove Volume](#remove-volume)
+  - [Docker Networking](#docker-networking)
+    - [The docker0 Bridge](#the-docker0-bridge)
+    - [Virtual Ethernet Interfaces](#virtual-ethernet-interfaces)
+    - [Network Configuration Files](#network-configuration-files)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -791,6 +795,10 @@ If the container is deleted without specifying `-v`, then the volume does not ge
 
 ### The docker0 Bridge
 
+When the Docker daemon starts on the Docker host, it creates a `docker0` bridge (virtual switch), created entirely in software. `docker0` is crucial to container networking. Just like a regular physical switch, it passes packets between connected devices. Normal switches have ports and devices attached to them. `bridge-utils` can be used to see what's connected to `docker0` (linux only).
+
+### Virtual Ethernet Interfaces
+
 Using this [Dockerfile](docker-net/Dockerfile), build, then launch two containers, for each one run interactive to keep the shell going, then Ctrl+P+Q to jump out:
 
 ```shell
@@ -800,3 +808,14 @@ docker run -it --name=net2 net-img
 ```
 
 Each new container gets one interface automatically attached to the `docker0` virtual bridge.
+
+From inside container, run `ip a` to look at network configuration. The `eth0` adapter is on the 172.17 network.
+When the Docker damon starts on the Docker host and creates the `docker0` bridge, it assigns it an IP address as defined in RFC1918. It picks a network that isn't already in use. By default, should be able to communicate out, for example `ping 8.8.8.8`.
+
+Can also determine the container's default gateway by running `traceroute 8.8.8.8`. The first entry is the default gateway. It's the address of the `docker0` interface on the Docker host.
+
+`eth0` in the container is connected to `vethx` interface on the Docker host (the interface that is automatically attached to `docker0`). They're like two ends of a pipe, where one is in the namespace of the docker host, and the other in the namespace of the container. Whatever goes into one end of the pipe pops out the other end.
+
+![alt text](readme-images/virtual-ethernet-interface-1.png "Logo Title Text 1")
+
+### Network Configuration Files
