@@ -46,6 +46,7 @@
     - [The docker0 Bridge](#the-docker0-bridge)
     - [Virtual Ethernet Interfaces](#virtual-ethernet-interfaces)
     - [Network Configuration Files](#network-configuration-files)
+    - [Exposing Ports](#exposing-ports)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -819,3 +820,54 @@ Can also determine the container's default gateway by running `traceroute 8.8.8.
 ![alt text](readme-images/virtual-ethernet-interface-1.png "Logo Title Text 1")
 
 ### Network Configuration Files
+
+For this demo, use same [Dockerfile](docker-net/Dockerfile) as previous section:
+
+```shell
+docker run -it --name=net3 net-img
+```
+
+Then detach (Ctrl+P+Q), then run `docker inspect net3` and look at "NetworkSettings". For example:
+
+```
+"NetworkSettings": {
+  "Bridge": "",
+  "SandboxID": "6a949a40e8562e8aca865d318396e027d87efb1f1e2beb32dd79edb242c6da2b",
+  "HairpinMode": false,
+  "LinkLocalIPv6Address": "",
+  "LinkLocalIPv6PrefixLen": 0,
+  "Ports": {},
+  "SandboxKey": "/var/run/docker/netns/6a949a40e856",
+  "SecondaryIPAddresses": null,
+  "SecondaryIPv6Addresses": null,
+  "EndpointID": "b6cc889fe41608552745ac0fc9dd727e6d848c6ff94c6d78c8205563c0f5c8a0",
+  "Gateway": "172.17.0.1",
+  "GlobalIPv6Address": "",
+  "GlobalIPv6PrefixLen": 0,
+  "IPAddress": "172.17.0.2",
+  "IPPrefixLen": 16,
+  "IPv6Gateway": "",
+```
+
+(instructor's machine shows `"Bridge": "docker0"`).
+
+All containers on this host will get the same default gateway, which is address of `docker0` interface in the host namespace.
+
+In course, look at container metadata in `/var/lib/docker/containers/<container id>` (but doesn't work on mac). Now look at `hosts` and `resolv.conf` files. `resolv.conf` has a single dns server and dns search domain:
+
+```
+nameserver 8.8.8.8
+search lan
+```
+
+These values can be overridden with arguments on `docker run` cli:
+
+```shell
+docker run --dns=8.8.4.4 --name=dnstest net-img
+```
+
+Then `docker inspect` and verify "Dns" section.
+
+Behind the scenes, every container gets its own resolv.conf and hosts files, _overlaid_ on top of resolv.conf and hosts files that exist in the image. That's why multiple containers based off same image can have different versions of these files.
+
+### Exposing Ports
