@@ -950,3 +950,92 @@ Now check exposed ports with `docker port web4`:
 ```
 
 ### Linking Containers
+
+[Example](docker-link/Dockerfile)
+
+This is another common way of networking containers. Linking containers is more secure than exposing ports, but it only works for container to container communication, not for communicating with the outside world.
+
+For linking, there are source and receiver containers, referred to as "src" and "rcvr" respectively. When using linking, container names are essential, because the name is used to create a link.
+
+Process is to first launch the "src" container, from an image that has certain ports declared as exposed in the Dockerfile. However, no need to expose those containers at runtime (i.e. `-p`), when container is launched. So the "src" ports are not mapped to ports on the host, therefore not available to the outside world.
+
+Then "rcvr" container is launched, and at this time, create a "linkback" to the "src" container. This causes the "src" container to communicate its network config to the "rcvr" container, such as IP address, protocols, ports, etc. This information gets stored inside the "rcvr" container.
+
+Now the "rcvr" can communicate with "src" container.
+
+For example, given an image built from [example Dockerfile](docker-link/Dockerfile) `docker build -t="link-test" .`, the following container names are for demonstration purposes only, for a real use case, would be named like "mysql", "redis", etc.
+
+STEP 1: Launch "src" container
+
+```shell
+docker run -d --name=src link-test
+```
+
+Notice that running `docker ps` will show container "link-test" as having PORT "80/tcp" exposed, but its not mapped to anything.
+
+STEP 2: Launch "rcvr" container based on an ubuntu image
+
+```shell
+docker run --name=rcvr --link=src:ali-src -it ubuntu:15.04 /bin/bash
+```
+
+`--link` command creates the linkback to the "src" container from this "rcvr" container. The format of the option is:
+
+```
+--link=<source container name>:<source alias>
+```
+
+The name and alias can be the same, and this is commonly used, for example `--link=src:src`.
+
+Running `docker inspect rcvr` shows the links, in this example:
+
+```
+"Links": [
+  "/src:/rcvr/ali-src"
+],
+```
+
+However, there is no link from "src", `docker inspect src | grep Links` shows:
+
+```
+"Links": null,
+```
+
+Inside "rcvr" container, we can see the networking information shared from "src".
+
+```
+docker attach rcvr
+docker env | grep ALI_SRC
+```
+
+"src" container provided "rcvr" with a number of environment variables containing the src's exposed ports and IP addresses:
+
+```
+ALI_SRC_PORT_80_TCP_ADDR=172.17.0.4
+ALI_SRC_PORT_80_TCP_PROTO=tcp
+ALI_SRC_PORT_80_TCP_PORT=80
+ALI_SRC_PORT=tcp://172.17.0.4:80
+ALI_SRC_NAME=/rcvr/ali-src
+ALI_SRC_PORT_80_TCP=tcp://172.17.0.4:80
+```
+
+There is also a new entry added to rcvr's hosts file for the alias, `cat /etc/hosts`:
+
+```
+27.0.0.1	localhost
+::1	localhost ip6-localhost ip6-loopback
+fe00::0	ip6-localnet
+ff00::0	ip6-mcastprefix
+ff02::1	ip6-allnodes
+ff02::2	ip6-allrouters
+172.17.0.4	ali-src 9962e0ae0292 src
+172.17.0.2	d6b383788994
+```
+
+This maps the alias name back to the IP address of the source.
+
+The recipient container can use the alias environment variables to dynamically and programmatically configure itself.
+
+For example, suppose "rcvr" container has a process that starts such as Node.js, and it needs to know a database name, port, pswd etc to connect to. It can use the src alias' environment variables to connect to the database. Caveat: The app in this case does need to know about the environment variables ahead of time, so they can be used in code.
+
+Multiple recipient containers can be linked to a single source container. And a single recipient container, to multiple sources.
