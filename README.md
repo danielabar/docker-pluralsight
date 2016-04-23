@@ -47,6 +47,7 @@
     - [Virtual Ethernet Interfaces](#virtual-ethernet-interfaces)
     - [Network Configuration Files](#network-configuration-files)
     - [Exposing Ports](#exposing-ports)
+    - [Viewing Exposed Ports](#viewing-exposed-ports)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -871,3 +872,28 @@ Then `docker inspect` and verify "Dns" section.
 Behind the scenes, every container gets its own resolv.conf and hosts files, _overlaid_ on top of resolv.conf and hosts files that exist in the image. That's why multiple containers based off same image can have different versions of these files.
 
 ### Exposing Ports
+
+[Example](docker-port/Dockerfile)
+
+Most common way of allowing communication between containers and the outside world is by exposing ports from containers. From a Dockerfile:
+
+```ruby
+EXPOSE 80
+```
+
+Makes it _possible_ to exposes port 80 on the container, to the host, at runtime. To _actually_ expose it, need to launch a container with `-p` option as part of `docker run`.
+
+Build an image from example Dockerfile, then launch an image from it:
+
+```shell
+docker build -t="apache-img" .
+docker run -d -p 5001:80 --name=web1 apache-img
+```
+
+`-p 5001:80` indicates that port 5001 on host is mapped to port 80 on container. i.e. any connections coming into host on port 5001 will be forwarded to port 80 on container.
+
+`docker ps` shows running container details including port mapping. This example has `0.0.0.0:5001->80/tcp`.
+
+To test connection, get docker machine's ip address `docker-mahine ip default`, then hit `<ip address>:5001` in a browser, should get the default Apache page. On the other hand, if you try default port 80, will get error page because the default port on the host is not mapped.
+
+### Viewing Exposed Ports
