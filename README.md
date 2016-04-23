@@ -52,6 +52,7 @@
   - [Troubleshooting](#troubleshooting)
     - [Docker Daemon Logging](#docker-daemon-logging)
     - [Container Logging](#container-logging)
+    - [Image Troubleshooting](#image-troubleshooting)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1079,3 +1080,11 @@ Behind the scenes, the Docker daemon captures and stores in a json file (in the 
 `docker logs <container ID|name>` cats output of this json file to the terminal. Also `docker logs -f` can be used to dynamically update the log output, like `tail -f`.
 
 If a container is running an app that writes app-specific logs to a file within the container, and these logs need to be shared or seen by another system, then mount a volume into the container at the point where the app logs get written to. This means anything logged to that volume will be persisted outside the container and can be accessed outside the container.
+
+### Image Troubleshooting
+
+Although recommended way to build a Docker image is using a Dockerfile, it can be a good idea to test the build first.
+
+The process is to spin up a container from a base image, for example, `docker run -it --name test ubuntu:15:04 /bin/bash`.
+
+Then within that container, manually run all the commands that are planned to go in the Dockerfile. This provides real-time feedback whether those commands are going to work and what sequence they need to be run in. This saves time compared to attempting to put commands in a Dockerfile, running the build, then having it error, and going back and forth to fix things.
