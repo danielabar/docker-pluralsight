@@ -7,7 +7,8 @@ RUN apt-get update && apt-get install -y \
   apache2 \
   apache2-utils
 
-EXPOSE 80
+# only need 80 for apache, the others are for demonstrating -P flag
+EXPOSE 80 100 400
 
 ENTRYPOINT ["apache2ctl"]
 

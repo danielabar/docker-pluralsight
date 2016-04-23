@@ -48,6 +48,7 @@
     - [Network Configuration Files](#network-configuration-files)
     - [Exposing Ports](#exposing-ports)
     - [Viewing Exposed Ports](#viewing-exposed-ports)
+    - [Linking Containers](#linking-containers)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -897,3 +898,55 @@ docker run -d -p 5001:80 --name=web1 apache-img
 To test connection, get docker machine's ip address `docker-mahine ip default`, then hit `<ip address>:5001` in a browser, should get the default Apache page. On the other hand, if you try default port 80, will get error page because the default port on the host is not mapped.
 
 ### Viewing Exposed Ports
+
+`docker port <container id|name>` command can be used to see exposed ports for a given container. For example:
+
+```
+80/tcp -> 0.0.0.0:5001
+```
+
+This says tcp port 80 on container is mapped to port 5001 on _all IPv4 addresses_ (0.0.0.0) on docker host.
+
+Watch out, the output is displayed backwards relative to `docker ps`, which has for example `0.0.0.0:5001->80/tcp`.
+
+By default, all port mappings are assumed to be tcp. But Docker does support mapping to udp at docker run command, for example:
+
+```shell
+docker run -d -p 5002:80/udp --name=web2 apache-img
+```
+
+To check what IPv4 addresses are available on the host (linux):
+
+```shell
+ip -f inet a
+```
+
+Mac equivalent `ifconfig | grep 'Link\|inet '`
+
+To limit port mapping to a particular IP address rather than all of them:
+
+```shell
+docker run -d -p 192.168.56.50:5003:80 --name=web3 apache-img
+```
+
+There is also a `-P` docker run option. This will map all exposed ports (i.e. from `EXPOSE` instruction in Dockerfile) to random high numbered ports on the host. For example, if Docker file has:
+
+```ruby
+EXPOSE 80 100 400
+```
+
+Then build a container and launch an image using `-P`:
+
+```shell
+docker run -d -P --name=web4 apache-img
+```
+
+Now check exposed ports with `docker port web4`:
+
+```
+100/tcp -> 0.0.0.0:32769
+400/tcp -> 0.0.0.0:32768
+80/tcp -> 0.0.0.0:32770
+```
+
+### Linking Containers
