@@ -53,6 +53,9 @@
     - [Docker Daemon Logging](#docker-daemon-logging)
     - [Container Logging](#container-logging)
     - [Image Troubleshooting](#image-troubleshooting)
+    - [Intermediate Images](#intermediate-images)
+    - [Network Troubleshooting](#network-troubleshooting)
+    - [IPTables](#iptables)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1088,3 +1091,68 @@ Although recommended way to build a Docker image is using a Dockerfile, it can b
 The process is to spin up a container from a base image, for example, `docker run -it --name test ubuntu:15:04 /bin/bash`.
 
 Then within that container, manually run all the commands that are planned to go in the Dockerfile. This provides real-time feedback whether those commands are going to work and what sequence they need to be run in. This saves time compared to attempting to put commands in a Dockerfile, running the build, then having it error, and going back and forth to fix things.
+
+### Intermediate Images
+
+[Example](docker-int/Dockerfile)
+
+Useful when starting with Dockerfile (i.e. not following previous sections suggestion to use a test container first). The example Dockerfile has an error in it, try to build:
+
+```shell
+docker build -t int-test .
+```
+
+There will be an error message about a non-zero return code, but they're not always obvious as to what's wrong.
+
+Run `docker images`, note the images with no repository or tag (<none>) are _intermediate_ images. It's the image that was committed after the last successful instruction in the build from Dockerfile.
+
+To debug, launch a container from the intermediate image id. For example, if `docker images` outputs:
+
+```
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+<none>              <none>              184adaf3385e        8 minutes ago       326.9 MB
+```
+
+Then:
+
+```shell
+docker run -it 184adaf3385e /bin/bash
+```
+
+### Network Troubleshooting
+
+When the Docker Daemon starts on the host machine, it does some basic network checks, to decide which range of IP addresses to assign to the docker0 bridge. But the way Docker checks if an IP address is already in use somewhere on the network is not foolproof. So it can happen that a container ends up with an assigned IP address that is already taken.
+
+It is possible to tell the Docker Daemon which IP addresses to use (linux):
+
+```shell
+service docker stop
+ip link del docker0
+vim /etc/default/docker
+```
+
+Add this:
+
+```
+DOCKER_OPTS-==bip=150.150.0.1/24
+```
+
+`bip` is bridge IP, followed by an address range.
+
+Then `service docker start`.
+
+### IPTables
+
+Local firewall config on the Docker host can interfere with Docker operation.
+
+By default, Docker allows all containers on the same Docker host to freely communicate with each other, and it creates any necessary IPTables forwarding rules to allow that. This is governed by `--icc=true` and `--iptables=true`.
+
+`icc` : Inter container communication. Sets whether containers can freely talk with each other and the Docker daemon. Default is true, but if set to false, then Docker daemon inserts a DROP rule into IPTables to stop containers communicating.
+
+`iptables` : Determines whether Doker is allowed to make any modifications to IPTables rules. Default is true.
+
+These can be set in docker options in `/etc/docker/default`
+
+```
+DOCKER_OPTS=""--icc=true --iptables=false"
+```
