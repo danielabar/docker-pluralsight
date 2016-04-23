@@ -49,6 +49,9 @@
     - [Exposing Ports](#exposing-ports)
     - [Viewing Exposed Ports](#viewing-exposed-ports)
     - [Linking Containers](#linking-containers)
+  - [Troubleshooting](#troubleshooting)
+    - [Docker Daemon Logging](#docker-daemon-logging)
+    - [Container Logging](#container-logging)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -1039,3 +1042,40 @@ The recipient container can use the alias environment variables to dynamically a
 For example, suppose "rcvr" container has a process that starts such as Node.js, and it needs to know a database name, port, pswd etc to connect to. It can use the src alias' environment variables to connect to the database. Caveat: The app in this case does need to know about the environment variables ahead of time, so they can be used in code.
 
 Multiple recipient containers can be linked to a single source container. And a single recipient container, to multiple sources.
+
+## Troubleshooting
+
+### Docker Daemon Logging
+
+This is not logging from containers, but the actual log messages from the Docker Daemon, running on the Docker host.
+
+The Docker Damon can be started in one of a few logging modes, ranging from most to least verbose: debug, info, error, fatal.
+
+Linux only (couldn't find how to restart Docker Daemon on Mac with Docker toolbox):
+
+```shell
+service docker stop
+docker -d -l debug &
+```
+
+Now run docker commands to see debug output go to console. To have it instead go to a logfile:
+
+```shell
+docker -d >> <file> 2>&1
+```
+
+Logging options can also be specifed in `/etc/default/docker`:
+
+```
+DOCKER_OPTS="--log-level=debug"
+```
+
+### Container Logging
+
+`docker logs` command is used to view output from the PID1 process inside a container. Use this to see what's going on inside a container without needing a shell into the container.
+
+Behind the scenes, the Docker daemon captures and stores in a json file (in the hosts file system) anything that the container's PID1 process writes to stdout and stderr streams.
+
+`docker logs <container ID|name>` cats output of this json file to the terminal. Also `docker logs -f` can be used to dynamically update the log output, like `tail -f`.
+
+If a container is running an app that writes app-specific logs to a file within the container, and these logs need to be shared or seen by another system, then mount a volume into the container at the point where the app logs get written to. This means anything logged to that volume will be persisted outside the container and can be accessed outside the container.
