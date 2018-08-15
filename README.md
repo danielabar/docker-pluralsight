@@ -3,7 +3,11 @@
 **Table of Contents**  *generated with [DocToc](http://doctoc.herokuapp.com/)*
 
 - [Docker Deep Dive](#docker-deep-dive)
+  - [Intro](#intro)
+    - [Containers](#containers)
+    - [Docker](#docker)
   - [Major Docker Components](#major-docker-components)
+    - [Big Picture](#big-picture)
     - [Images](#images)
     - [Containers](#containers)
     - [Registries and Repositories](#registries-and-repositories)
@@ -63,7 +67,52 @@
 
 > Learning Docker with [Pluralsight course](https://app.pluralsight.com/library/courses/docker-deep-dive/description)
 
+## Intro
+
+### Containers
+
+- Conceptually similar to VM but more lightweight than virtual machines, doesn't need full OS, consume less cpu/ram/disk space.
+- Provide secure, isolated runtime environment for applications to live in.
+- Allow for creating multiple isolated instances of user space.
+- Each container has only one app or service installed within it.
+
+![container intro](readme-images/container-intro.png "container-intro")
+
+Each container has its own root file system:
+
+![container file system](readme-images/container-fs.png "container file system")
+
+### Docker
+
+- Both a technology and platform.
+- Docker is a container runtime -> implementation of container technology
+
+![docker high level](readme-images/docker-high-level.png "docker high level")
+
+![docker intro](readme-images/docker-intro.png "docker intro")
+
+**Docker Platform**
+
+- Image format
+- Container runtime
+- Registry -> Docker Hub
+- Clustering -> Docker Swarm
+- Orchestration -> Docker Compose
+- Written in Golang
+
+`libcontainer` is execution driver for Docker
+
+![libcontainer](readme-images/libcontainer.png "libcontainer")
+
 ## Major Docker Components
+
+### Big Picture
+
+Analogy: Container shipping yard
+
+Docker Engine === Docker Daemon
+
+![shipyard](readme-images/shipyard.png "shipyard")
 
 ### Images
 
@@ -441,9 +490,9 @@ Step 2 : MAINTAINER developer@foo.test
 
 Detailed analysis of Step 2:
 1. Spins up an (intermediate) container with id `4a5338caecdf`
-1. Runs the MAINTAINER command
-1. Commits a new image layer with id `52bda3555ffb`
-1. Removes intermediate container `4a5338caecdf`
+2. Runs the MAINTAINER command
+3. Commits a new image layer with id `52bda3555ffb`
+4. Removes intermediate container `4a5338caecdf`
 
 This sequence of steps is repeated for each instruction in the Dockerfile.
 
